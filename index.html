@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saved Card Finder — remove your saved cards from every shop in minutes</title>
+<meta name="description" content="Scan your Gmail receipts on your device and get a direct link to each shop's saved cards page. Runs 100% in your browser.">
+<!-- CSP: only our own files, plus the Google sign-in library (accounts.google.com/gsi), the Gmail API and the token-revoke endpoint. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style 'sha256-RU4sU0AaS8IBGZx8XrGt/pa9A5SLA3dQszGeqT5L3Kw='; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://gmail.googleapis.com https://oauth2.googleapis.com; img-src 'self' data:; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Google sign-in needs the page origin in the Referer; shop links still use rel=noreferrer. -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="stylesheet" href="css/style.css?v=12">
+</head>
+<body>
+<header class="hero">
+  <img class="logo" src="img/logo.svg?v=12" alt="Saved Card Finder logo">
+  <div class="wrap">
+    <h1>💳 Saved Card Finder</h1>
+    <p class="tag">Find every shop that has your card saved, and get the direct link to remove it.</p>
+    <p class="privacy" id="privacy">🔒 <strong>Everything runs in your browser.</strong> Nothing is uploaded or sent to any server. When you connect Gmail, your browser talks directly to Google and nothing else. No sign-up, no tracking. You can turn your Wi‑Fi off after the page loads and it still works.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card no-print buy" id="buy-card">
+    <h2>Get your removal checklist</h2>
+    <p class="hint">We scan your Gmail receipts and give you a direct link to remove your card from every shop you've paid.</p>
+    <div class="row">
+      <a id="buy" class="btn primary" href="#" rel="noopener">Get access for <span class="price">£3</span></a>
+    </div>
+    <p class="sub" id="buy-msg" role="status" hidden></p>
+    <h3>How it works</h3>
+    <ol class="how">
+      <li>Pay <span class="price">£3</span> once. No subscription.</li>
+      <li>At checkout, enter the Gmail address you want scanned. You can add a second one too (for example an old and a new address).</li>
+      <li>We add your access within a few hours.</li>
+      <li>You get an email with your sign-in link. Open it, connect Gmail, and get your full checklist.</li>
+    </ol>
+    <p class="sub signin">Already have access? <a href="index.html?access=1" id="signin-link">Sign in</a> <span class="note">(only works after you get your "you're in" email)</span></p>
+  </section>
+
+  <section class="card no-print" id="input-card" hidden>
+    <h2>Tell us where you shopped</h2>
+    <div class="gmail" id="gmail-box">
+      <h3>Scan your Gmail receipts <span class="pill">read-only</span></h3>
+      <p class="disclosure short" id="gmail-disclosure">We read only the sender and subject of your receipt emails, on your device. Nothing is stored or sent anywhere. <a href="privacy.html">Privacy policy</a></p>
+      <details class="more-privacy" id="gmail-more">
+        <summary>More about privacy</summary>
+        <p class="disclosure"><strong>What we read:</strong> we read <em>sender and subject lines of receipt emails only, locally</em>: the <code>From:</code> and <code>Subject:</code> headers of emails that match receipt searches (<span id="gmail-query-label">purchases, orders, invoices, payments, subscriptions and billing senders, any date</span>, up to 5,000 emails, or 20,000 with "Scan deeper"). Subjects are needed to spot the real shop behind payment services like PayPal, Stripe or Google Play. We never request email bodies, snippets or attachments. <strong>Where it goes:</strong> nowhere. Your browser talks directly to Google's Gmail API; everything stays in this tab's memory and is gone when you close it. Nothing is sent to us or anyone else. Access is revoked automatically when the scan finishes. Google's consent screen will say "read your email" because that's the narrowest permission that allows searching.</p>
+      </details>
+      <label class="consent"><input type="checkbox" id="gmail-consent"> I understand. Let Saved Card Finder read the sender and subject lines of my receipt emails, in this browser only.</label>
+      <div class="row">
+        <button type="button" id="gmail-connect" class="primary" disabled>Connect Gmail &amp; scan</button>
+        <button type="button" id="gmail-deeper" class="ghost" hidden title="Reads up to 20,000 emails, going further back">Scan deeper</button>
+        <button type="button" id="gmail-disconnect" class="ghost" hidden>Disconnect</button>
+      </div>
+      <p class="sub wrong-acct" id="gmail-help">Signed in with the wrong account, or saw "Access blocked"? Only the Gmail address(es) you entered at checkout can sign in. Reply to your access email with the right address and we'll switch it. <span class="support-line" hidden>Or email <a class="support-mail" href="mailto:k.krisztian.zoltan@gmail.com">k.krisztian.zoltan@gmail.com</a>.</span></p>
+      <p class="sub" id="gmail-hint" hidden></p>
+      <div class="progress" id="gmail-progress" hidden><div></div></div>
+      <p class="sub" id="gmail-status" role="status" aria-live="polite"></p>
+    </div>
+    <!-- Paste / mailbox-file input: kept for ?demo=1 and tests, not shown. -->
+    <div id="manual" hidden>
+    <p class="hint">Paste shop names <em>or</em> email senders from your receipts, one per line or separated by commas. Raw <code>From:</code> lines work too.</p>
+    <details class="howto">
+      <summary>Fastest way: copy senders from Gmail / Outlook</summary>
+      <ol>
+        <li>In Gmail search, paste: <code id="gmail-q">receipt OR "order confirmation" OR "your order" OR invoice OR "payment received" newer_than:5y</code> <button type="button" class="linkbtn" data-copy="#gmail-q">copy</button></li>
+        <li>Select the results list (Ctrl/Cmd + A on the page) and copy, then paste below. We pick out the senders.</li>
+        <li>Or export your mail with <a href="https://takeout.google.com/" target="_blank" rel="noopener">Google Takeout</a> (Mail only, mbox format) and drop the <code>.mbox</code> file below. It's read on your device.</li>
+      </ol>
+    </details>
+    <textarea id="input" rows="8" spellcheck="false" placeholder="auto-confirm@amazon.co.uk&#10;Deliveroo, Just Eat, Netflix&#10;From: Uber Receipts &lt;noreply@uber.com&gt;&#10;sainsburys.co.uk"></textarea>
+    <div class="drop" id="drop" tabindex="0">
+      <strong>Or drop .mbox / .eml files here</strong> (or <label class="linkbtn"><input type="file" id="file" accept=".mbox,.eml,.txt,message/rfc822" multiple hidden>choose files</label>)
+      <div class="sub">Parsed locally. Only the <code>From:</code> and <code>Subject:</code> lines of each email are read.</div>
+      <div class="progress" id="file-progress" hidden><div></div></div>
+      <div class="sub" id="file-status"></div>
+    </div>
+    <div class="row">
+      <button type="button" id="find" class="primary">Find my saved cards</button>
+      <button type="button" id="example" class="ghost">Try an example</button>
+      <button type="button" id="clear" class="ghost">Clear</button>
+    </div>
+    </div>
+  </section>
+
+  <section class="card" id="results" hidden>
+    <div class="results-head">
+      <h2>Your removal checklist</h2>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+    <div class="progress big"><div id="progress-bar"></div></div>
+    <p class="scan-stats no-print" id="scan-stats" hidden></p>
+    <p class="hint no-print">Open each link, sign in, delete the card, then tick <strong>Done</strong>. Your ticks are saved on this device only.</p>
+    <div class="row no-print">
+      <button type="button" id="copy" class="ghost">Copy list</button>
+      <button type="button" id="print" class="ghost">Print</button>
+      <button type="button" id="reset-done" class="ghost">Reset ticks</button>
+      <button type="button" id="hubs" class="linkbtn" title="PayPal, Google Pay, Apple, Amazon, Link, Shop Pay, Klarna, Clearpay: they store cards for lots of shops">+ Add the big card wallets</button>
+    </div>
+    <ol id="list" class="list"></ol>
+
+    <li id="paywall" class="paywall no-print" hidden>
+      <p><strong id="locked-count"></strong> more shops in this example. Get access to scan your own Gmail and see your full checklist with direct links.</p>
+      <a id="unlock" class="btn primary" href="#" rel="noopener">Get access for <span class="price">£3</span></a>
+      <p class="sub">One-off payment. No subscription. (We're trying to <em>stop</em> things charging your card.)</p>
+    </li>
+
+
+    <div class="senders no-print" id="senders-wrap" hidden>
+      <label class="consent"><input type="checkbox" id="senders-toggle"> Show all senders found <span class="sub">(only on this device)</span></label>
+      <div id="senders-table" hidden>
+        <div class="row">
+          <select id="senders-filter" aria-label="Filter senders">
+            <option value="all">All senders</option><option value="used">Used as shops</option>
+            <option value="nomatch">Shops not in our list</option><option value="skipped">Skipped</option>
+          </select>
+          <button type="button" id="senders-copy" class="ghost">Copy CSV</button>
+          <button type="button" id="senders-download" class="ghost">Download CSV</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Sender domain</th><th>Name</th><th class="num">Emails</th><th class="num">Receipt-like</th><th>Shop found inside</th><th>Result</th></tr></thead>
+          <tbody id="senders-body"></tbody>
+        </table></div>
+        <p class="sub">Subjects are never shown or exported.</p>
+      </div>
+    </div>
+
+    <details class="card inner no-print">
+      <summary>Don't forget these (not shops, but they store cards too)</summary>
+      <ul class="extras">
+        <li><strong>Chrome autofill:</strong> type <code>chrome://settings/payments</code> in the address bar (browsers block direct links to it).</li>
+        <li><strong>Edge:</strong> <code>edge://settings/payments</code> &nbsp; <strong>Firefox:</strong> Settings > Privacy & Security > Saved payment methods.</li>
+        <li><strong>Safari / iPhone:</strong> Settings > Apps > Safari > AutoFill > Saved credit cards; and the Wallet app.</li>
+        <li><strong>Android:</strong> Google Wallet app, and Chrome > Settings > Payment methods.</li>
+        <li><strong>Subscriptions:</strong> your bank app (Monzo, Starling, Revolut, most high-street banks) can list and block recurring card payments.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="card faq no-print">
+    <h2>FAQ</h2>
+    <details><summary>Do you see my card details or passwords?</summary><p>No. You never type a card number or password here. We only link you to each shop's own page; you sign in there yourself.</p></details>
+    <details><summary>Why can't it delete the cards for me?</summary><p>Every shop requires you to sign in to its own site, and no tool can safely do that for you without your password. We cut the job down to: click link, sign in, press delete.</p></details>
+    <details><summary>Some links open the account page, not the cards page</summary><p>Some shops don't have a stable direct link (or only manage cards in their app). For those we link the closest page and give you the exact steps. Rows marked <span class="badge low">account page</span> are those. Shops we don't know yet are marked <span class="badge search">search</span>: the button searches that shop's own site for its saved cards page.</p></details>
+    <details><summary>What does "Connect Gmail" actually access?</summary><p>Google's permission is "read-only Gmail" (there is no narrower one that can search). The app runs a few receipt searches (Gmail's Purchases category, receipt-style subjects, and billing/receipt senders), then asks Google for only the <code>From:</code> and <code>Subject:</code> headers of each match. We read sender and subject lines of receipt emails only, locally: subjects are used in your browser to find the shop behind PayPal, Stripe, Paddle, Apple or Google Play receipts, and to ignore newsletters. Bodies, snippets and attachments are never requested. The token stays in memory, is never saved, and is revoked when the scan ends. You can also check or remove access at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>.</p></details>
+    <details><summary>How do I get access?</summary><p>Press <strong>Get access</strong> and pay once through Stripe. At checkout, enter the Gmail address you want scanned (and a second one if you like, such as an old address). We add those addresses to the app's sign-in list within a few hours and email you your sign-in link. Open that link, connect Gmail and you get the full checklist. This browser remembers your access, so next time just open the site.</p></details>
+    <details><summary>Google says "Access blocked", or I used the wrong Gmail</summary><p>While the app is waiting for Google's review, only the Gmail address(es) entered at checkout can sign in. Anyone else sees Google's "Access blocked" screen. Reply to your access email with the right address and we'll switch it.</p></details>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>Saved Card Finder · <span id="db-info"></span> · Links checked by hand; shops change their sites, so <a href="https://www.google.com/search?q=remove+saved+card" target="_blank" rel="noopener">search</a> if one breaks.</p>
+  <p><a href="privacy.html">Privacy policy</a> · <button type="button" class="linkbtn" id="wipe">Delete everything this site saved on this device</button></p>
+  <p id="support"></p>
+</footer>
+
+<script src="js/config.js?v=12"></script>
+<script src="data/shops.js?v=12"></script>
+<script src="js/match.js?v=12"></script>
+<script src="js/extract.js?v=12"></script>
+<script src="js/mbox.js?v=12"></script>
+<script src="js/gmail.js?v=12"></script>
+<script src="js/logo.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
+</body>
+</html>
